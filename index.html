@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>The Hollowing – Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+    }
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+      pointer-events: none;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    W/A/S/D to move · Mouse to look · Horror Prototype
+  </div>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.160.0/examples/jsm/controls/PointerLockControls.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
