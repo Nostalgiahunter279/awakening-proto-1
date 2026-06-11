@@ -196,9 +196,111 @@ function animate() {
       flashlight.target.updateMatrixWorld();
     }
 
-    // Update monster
-    updateMonster(delta);
+   // Monster AI states
+const AI = {
+  IDLE: 0,
+  STALK: 1,
+  CHASE: 2,
+  SEARCH: 3
+};
+
+let monsterState = AI.IDLE;
+let searchTimer = 0;
+
+function updateMonster(delta) {
+  const playerPos = new THREE.Vector3();
+  camera.getWorldPosition(playerPos);
+
+  const monsterPos = monster.position.clone();
+  const distance = monsterPos.distanceTo(playerPos);
+
+  // Direction from monster to player
+  const dirToPlayer = new THREE.Vector3().subVectors(playerPos, monsterPos).normalize();
+
+  // Monster's forward direction
+  const monsterForward = new THREE.Vector3(0, 0, -1).applyQuaternion(monster.quaternion);
+
+  // Dot product to check if player is in front of monster
+  const inFront = monsterForward.dot(dirToPlayer) > 0.4;
+
+  // Raycast for line of sight
+  const raycaster = new THREE.Raycaster(monsterPos, dirToPlayer);
+  const intersects = raycaster.intersectObjects(scene.children, true);
+  const hasLOS = intersects.length === 0 || intersects[0].distance >= distance;
+
+  // --- AI STATE MACHINE ---
+
+  switch (monsterState) {
+
+    // -------------------------
+    // IDLE — monster stands still until player is near
+    // -------------------------
+    case AI.IDLE:
+      if (distance < 12) {
+        monsterState = AI.STALK;
+      }
+      break;
+
+    // -------------------------
+    // STALK — monster slowly follows player but stays hidden
+    // -------------------------
+    case AI.STALK:
+      if (hasLOS && inFront && distance < 8) {
+        monsterState = AI.CHASE;
+      } else {
+        const stalkSpeed = 0.8;
+        monster.position.addScaledVector(dirToPlayer, stalkSpeed * delta);
+      }
+      break;
+
+    // -------------------------
+    // CHASE — full sprint toward player
+    // -------------------------
+    case AI.CHASE:
+      const chaseSpeed = 4.5;
+      monster.position.addScaledVector(dirToPlayer, chaseSpeed * delta);
+
+      // If monster loses sight, go to search mode
+      if (!hasLOS) {
+        monsterState = AI.SEARCH;
+        searchTimer = 3; // seconds
+      }
+
+      // Jumpscare trigger
+      if (distance < 1.2) {
+        document.getElementById("overlay").innerText =
+          "The Hollowing consumes you. Refresh to try again.";
+      }
+      break;
+
+    // -------------------------
+    // SEARCH — monster looks around for the player
+    // -------------------------
+    case AI.SEARCH:
+      searchTimer -= delta;
+
+      // Rotate slowly while searching
+      monster.rotation.y += delta * 0.8;
+
+      if (searchTimer <= 0) {
+        monsterState = AI.IDLE;
+      }
+
+      // If it sees the player again, resume chase
+      if (hasLOS && inFront) {
+        monsterState = AI.CHASE;
+      }
+      break;
   }
+
+  // Smoothly rotate monster toward player
+  const targetQuat = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, -1),
+    dirToPlayer
+  );
+  monster.quaternion.slerp(targetQuat, delta * 2);
+}
+
 
   renderer.render(scene, camera);
 }
